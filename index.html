@@ -45,23 +45,12 @@
             box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
         }
 
-        /* Posicions de les cares del cub */
         .face-1 { transform: rotateY(0deg) translateZ(50px); }
         .face-2 { transform: rotateY(90deg) translateZ(50px); }
         .face-3 { transform: rotateX(90deg) translateZ(50px); }
         .face-4 { transform: rotateX(-90deg) translateZ(50px); }
         .face-5 { transform: rotateY(-90deg) translateZ(50px); }
         .face-6 { transform: rotateY(180deg) translateZ(50px); }
-
-        /* Estils dels punts del dau */
-        .dot { width: 18px; height: 18px; background: black; border-radius: 50%; position: absolute; }
-
-        /* Animació de sacsejada (Shake) mentre "pensa" */
-        .shaking { animation: fast-spin 0.2s infinite linear; }
-        @keyframes fast-spin {
-            from { transform: rotateX(0) rotateY(0); }
-            to { transform: rotateX(360deg) rotateY(360deg); }
-        }
 
         /* Marcador i Terminal */
         .score-board { font-size: 2.5rem; font-weight: 900; color: var(--gold); margin: 10px; }
@@ -110,12 +99,13 @@
         <button id="btn-tira">🎲 Tirar</button>
         <button id="btn-acumula">💰 Acumular</button>
     </div>
-    <button id="btn-restart">🔄 VOLVER A JUGAR</button>
+    <button id="btn-restart">🔄 TORNAR A JUGAR</button>
 
     <script type="py">
         import random
         import asyncio
         from pyscript import document, when
+        from js import location  # <--- CORRECCIÓ: Necessari per reiniciar la pàgina
 
         punts_jugador = 0
         punts_cpu = 0
@@ -128,7 +118,6 @@
 
         async def rotar_dau(n):
             cube = document.getElementById("cube")
-            # Coordenades per cada cara
             angles = {
                 1: "rotateX(0deg) rotateY(0deg)",
                 2: "rotateX(0deg) rotateY(-90deg)",
@@ -137,10 +126,9 @@
                 5: "rotateX(0deg) rotateY(90deg)",
                 6: "rotateX(0deg) rotateY(180deg)"
             }
-            # Afegim girs extra perquè sembli més realista
             extra_spin = f" rotateX({random.choice([360, 720])}deg) rotateY({random.choice([360, 720])}deg) "
             cube.style.transform = extra_spin + angles[n]
-            await asyncio.sleep(1.5) # Temps de l'animació CSS
+            await asyncio.sleep(1.5)
 
         @when("click", "#btn-tira")
         async def tira(event):
@@ -211,7 +199,7 @@
 
         @when("click", "#btn-restart")
         def reiniciar(event):
-            location.reload() # La forma més neta de reiniciar tot el motor PyScript
+            location.reload()  # <--- Ara funcionarà correctament gràcies a l'import superior
 
     </script>
 </body>
