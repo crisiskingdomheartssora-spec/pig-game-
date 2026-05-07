@@ -3,77 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pig Game - Projecte Escolar</title>
+    <title>Pig Game Deluxe - Projecte Escolar</title>
 
     <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css" />
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 
     <style>
         body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #1a1a2e; 
-            color: #ffffff;
+            font-family: 'Segoe UI', sans-serif; background-color: #1a1a2e; color: #ffffff;
             display: flex; flex-direction: column; align-items: center; padding: 20px;
         }
-        h1 { color: #f1c40f; text-shadow: 2px 2px #000; }
         
-        /* Panel de Instrucciones */
         #instruccions {
-            background-color: #16213e;
-            border-left: 5px solid #f1c40f;
-            padding: 15px;
-            border-radius: 8px;
-            max-width: 600px;
-            margin-bottom: 20px;
-            font-size: 0.9rem;
-            line-height: 1.4;
+            background-color: #16213e; border-left: 5px solid #f1c40f;
+            padding: 15px; border-radius: 8px; max-width: 600px; margin-bottom: 20px;
+            font-size: 0.85rem; line-height: 1.4;
         }
+
+        /* El Dado Animado */
+        #dice-container {
+            width: 100px; height: 100px; background-color: white; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            margin: 15px; box-shadow: 0 0 20px rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+        #dice-text { color: #1a1a2e; font-family: monospace; font-size: 12px; white-space: pre; font-weight: bold; }
+
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            25% { transform: translate(-2px, -1px) rotate(-3deg); }
+            50% { transform: translate(2px, 1px) rotate(3deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .shaking { animation: shake 0.1s infinite; background-color: #f1c40f !important; }
 
         #terminal { 
-            background-color: #0f3460; color: #4ecca3; 
-            padding: 20px; border-radius: 15px; border: 2px solid #16213e;
-            width: 90%; max-width: 600px; height: 350px;
-            white-space: pre-wrap; overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            background-color: #0f3460; color: #4ecca3; padding: 15px; border-radius: 10px;
+            width: 90%; max-width: 500px; height: 120px; overflow-y: auto; font-family: monospace;
         }
 
-        .controls { margin-top: 20px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
-        
-        button {
-            padding: 12px 24px; font-size: 1rem; cursor: pointer;
-            border: none; border-radius: 5px; font-weight: bold;
-            transition: 0.3s;
-        }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        button { padding: 12px 20px; border: none; border-radius: 5px; font-weight: bold; cursor: pointer; transition: 0.2s; }
         #btn-tira { background-color: #2ecc71; color: white; }
         #btn-acumula { background-color: #f1c40f; color: #1a1a2e; }
-        #btn-restart { background-color: #e94560; color: white; display: none; } /* Oculto al inicio */
-        
-        button:hover:not(:disabled) { transform: translateY(-2px); opacity: 0.9; }
-        button:disabled { background-color: #555; cursor: not-allowed; }
-
-        .marcador { font-size: 1.2rem; margin: 10px; color: #f1c40f; font-weight: bold; }
+        #btn-restart { background-color: #e94560; color: white; display: none; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <h1>🐷 PIG GAME 🎲</h1>
-
+    <h1>🎲 PIG GAME 🐷</h1>
+    
     <div id="instruccions">
-        <strong>Com jugar:</strong> El primer en arribar a 100 punts guanya. 
-        A cada torn, tires el dau: si surt <strong>2-6</strong>, els punts se sumen a la teva ronda. 
-        Pots <strong>Acumular</strong> per guardar-los. 
-        Però compte! Si treus un <strong>1</strong>, perds tots els punts d'aquella ronda i el torn passa a la CPU.
+        <strong>Regles:</strong> Arriba a 100 per guanyar. Si treus un 1, perds els punts del torn. 
+        Pots "Acumular" per guardar els punts de la ronda.
     </div>
 
-    <div id="marcador" class="marcador">Jugador: 0 | CPU: 0</div>
+    <div id="dice-container"><div id="dice-text">PIG</div></div>
 
-    <div id="terminal">Carregant el joc...</div>
+    <div id="scoreboard" style="font-size: 1.3rem; margin: 10px; font-weight: bold;">Tu: 0 | CPU: 0</div>
+    <div id="terminal">Prem el botó per començar!</div>
 
     <div class="controls">
         <button id="btn-tira">🎲 TIRAR</button>
         <button id="btn-acumula">💰 ACUMULAR</button>
-        <button id="btn-restart">🔄 VOLVER A JUGAR</button>
+        <button id="btn-restart">🔄 TORNA A JUGAR</button>
     </div>
 
     <script type="py">
@@ -81,117 +75,98 @@
         import asyncio
         from pyscript import document, when
 
-        # Variables de estado
         punts_jugador = 0
         punts_cpu = 0
         puntuacio_ronda = 0
         OBJECTIU = 100
-        jugant = True
 
-        def print_web(text):
+        def log(msg):
             t = document.getElementById("terminal")
-            t.innerText += str(text) + "\n"
-            t.scrollTop = t.scrollHeight
+            t.innerHTML = f"> {msg}<br>" + t.innerHTML
 
-        def neteja_pantalla():
-            document.getElementById("terminal").innerText = ""
+        def actualizar_pantalla():
+            document.getElementById("scoreboard").innerText = f"Tu: {punts_jugador} | CPU: {punts_cpu} (Ronda: {puntuacio_ronda})"
 
-        def actualitza_marcador():
-            document.getElementById("marcador").innerText = f"Jugador: {punts_jugador} | CPU: {punts_cpu}"
-
-        def dibuix_dau(tir):
-            daus = {
-                1: ["+---------+", "|         |", "|    O    |", "|         |", "+---------+"],
-                2: ["+---------+", "|  O      |", "|         |", "|      O  |", "+---------+"],
-                3: ["+---------+", "|  O      |", "|    O    |", "|      O  |", "+---------+"],
-                4: ["+---------+", "|  O   O  |", "|         |", "|  O   O  |", "+---------+"],
-                5: ["+---------+", "|  O   O  |", "|    O    |", "|  O   O  |", "+---------+"],
-                6: ["+---------+", "|  O O O  |", "|         |", "|  O O O  |", "+---------+"]
-            }
-            for linia in daus[tir]: print_web(linia)
-
-        def set_buttons(tira, acumula, restart):
-            document.getElementById("btn-tira").disabled = not tira
-            document.getElementById("btn-acumula").disabled = not acumula
-            document.getElementById("btn-restart").style.display = "block" if restart else "none"
+        async def animar_dau(resultat):
+            dau_div = document.getElementById("dice-container")
+            text_div = document.getElementById("dice-text")
+            dau_div.classList.add("shaking")
+            
+            for _ in range(8):
+                val = random.randint(1,6)
+                text_div.innerText = f"+-------+\n|       |\n|   {val}   |\n|       |\n+-------+"
+                await asyncio.sleep(0.06)
+            
+            dau_div.classList.remove("shaking")
+            text_div.innerText = f"+-------+\n|       |\n|   {resultat}   |\n|       |\n+-------+"
 
         @when("click", "#btn-tira")
-        async def accio_tira(event):
+        async def tira(event):
             global puntuacio_ronda
-            set_buttons(False, False, False)
+            document.getElementById("btn-tira").disabled = True
+            document.getElementById("btn-acumula").disabled = True
             
             tir = random.randint(1, 6)
-            neteja_pantalla()
-            print_web(f"Has tret un {tir}!")
-            dibuix_dau(tir)
+            await animar_dau(tir)
             
             if tir == 1:
-                print_web("\n😱 Oh no! Has tret un 1. Torn per la CPU.")
+                log("Mala sort! Has tret un 1.")
                 puntuacio_ronda = 0
-                await asyncio.sleep(2)
+                actualizar_pantalla()
                 await torn_cpu()
             else:
                 puntuacio_ronda += tir
-                print_web(f"\nPunts acumulats a la ronda: {puntuacio_ronda}")
-                set_buttons(True, True, False)
+                log(f"Has tret un {tir}. Ronda: {puntuacio_ronda}")
+                actualizar_pantalla()
+                document.getElementById("btn-tira").disabled = False
+                document.getElementById("btn-acumula").disabled = False
 
         @when("click", "#btn-acumula")
-        async def accio_acumula(event):
+        async def acumula(event):
             global punts_jugador, puntuacio_ronda
             punts_jugador += puntuacio_ronda
             puntuacio_ronda = 0
-            actualitza_marcador()
-            neteja_pantalla()
-            print_web(f"Has guardat els punts!")
+            actualizar_pantalla()
             
             if punts_jugador >= OBJECTIU:
-                guanyar("JUGADOR")
+                finalitzar("TU")
             else:
                 await torn_cpu()
 
         async def torn_cpu():
             global punts_cpu
-            set_buttons(False, False, False)
+            document.getElementById("btn-tira").disabled = True
+            document.getElementById("btn-acumula").disabled = True
             cpu_ronda = 0
             
+            log("Torn de la CPU...")
             while True:
-                neteja_pantalla()
-                print_web("--- TORN DE LA CPU ---")
-                print_web(f"Punts ronda CPU: {cpu_ronda}")
                 await asyncio.sleep(1)
-                
                 tir = random.randint(1, 6)
-                print_web(f"La CPU tira... i surt un {tir}")
-                dibuix_dau(tir)
+                await animar_dau(tir)
                 
                 if tir == 1:
-                    print_web("\nLa CPU ha tret un 1! No suma res.")
-                    await asyncio.sleep(2)
+                    log("La CPU ha tret un 1.")
                     break
                 else:
                     cpu_ronda += tir
                     if cpu_ronda >= 15 or (punts_cpu + cpu_ronda) >= OBJECTIU:
                         punts_cpu += cpu_ronda
-                        print_web(f"\nLa CPU decideix plantar-se amb {cpu_ronda} punts.")
-                        await asyncio.sleep(2)
+                        log(f"La CPU guarda {cpu_ronda}.")
                         break
-                    await asyncio.sleep(1)
             
-            actualitza_marcador()
+            actualizar_pantalla()
             if punts_cpu >= OBJECTIU:
-                guanyar("CPU")
+                finalitzar("CPU")
             else:
-                neteja_pantalla()
-                print_web("--- EL TEU TORN ---")
-                set_buttons(True, True, False)
+                document.getElementById("btn-tira").disabled = False
+                document.getElementById("btn-acumula").disabled = False
 
-        def guanyar(qui):
-            neteja_pantalla()
-            if qui == "JUGADOR":
-                print_web("🎊 ¡FELICITATS! HAS GUANYAT LA PARTIDA! 🎊")
-            else:
-                print_web("💀 LA CPU HA GUANYAT. Millor sort el pròxim cop.")
-            set_buttons(False, False, True)
+        def finalitzar(guanyador):
+            document.getElementById("btn-tira").style.display = "none"
+            document.getElementById("btn-acumula").style.display = "none"
+            document.getElementById("btn-restart").style.display = "block"
+            log(f"🏆 PARTIDA ACABADA. GUANYADOR: {guanyador}")
 
         @when("click", "#btn-restart")
         def reiniciar(event):
@@ -199,15 +174,15 @@
             punts_jugador = 0
             punts_cpu = 0
             puntuacio_ronda = 0
-            actualitza_marcador()
-            neteja_pantalla()
-            print_web("Nou joc iniciat! És el teu torn.")
-            set_buttons(True, True, False)
+            document.getElementById("btn-tira").style.display = "block"
+            document.getElementById("btn-acumula").style.display = "block"
+            document.getElementById("btn-restart").style.display = "none"
+            document.getElementById("btn-tira").disabled = False
+            document.getElementById("btn-acumula").disabled = False
+            document.getElementById("dice-text").innerText = "PIG"
+            actualizar_pantalla()
+            log("Partida reiniciada!")
 
-        # Iniciar terminal
-        neteja_pantalla()
-        print_web("Benvingut al Pig Game! Prem TIRAR per començar.")
-        set_buttons(True, True, False)
     </script>
 </body>
 </html>
